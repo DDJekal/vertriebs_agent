@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: salesbot
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MANUS_API_KEY
+        sync: false
+      - key: MANUS_API_BASE_URL
+        value: https://api.manus.im/v1
+      - key: MANUS_PROJECT_ID
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MICROSOFT_APP_ID
+        sync: false
+      - key: MICROSOFT_APP_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: salesbot-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: REQUIRE_CONFIRMATION
+        value: "true"
+    healthCheckPath: /health
+
+databases:
+  - name: salesbot-db
+    plan: starter
