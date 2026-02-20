@@ -18,7 +18,7 @@ class ManusClient:
 
     def _headers(self) -> dict[str, str]:
         return {
-            "Authorization": f"Bearer {self.api_key}",
+            "API_KEY": self.api_key,
             "Content-Type": "application/json",
         }
 
