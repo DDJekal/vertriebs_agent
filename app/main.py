@@ -1,13 +1,12 @@
 """FastAPI Application – Haupteinstiegspunkt."""
 
-import base64
 import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from botbuilder.core import CardFactory, TurnContext
-from botbuilder.schema import Activity, Attachment, ConversationReference
+from botbuilder.core import TurnContext
+from botbuilder.schema import Activity, ConversationReference
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -166,53 +165,29 @@ async def manus_webhook(request: Request, db: Session = Depends(get_db)):
 
 
 async def _send_result_to_teams(task: AnalysisTask):
-    """Lädt die Präsentation von Manus herunter und sendet sie proaktiv an Teams."""
+    """Sendet den Download-Link der fertigen Präsentation proaktiv an Teams."""
     conv_ref_data = json.loads(task.conversation_reference)
     conv_ref = ConversationReference().deserialize(conv_ref_data)
 
-    file_name = task.result_file_name or "Wettbewerbsanalyse.pptx"
+    file_name = task.result_file_name or "Wettbewerbsanalyse"
+    download_url = task.result_file_url
 
-    if task.result_file_url:
-        manus_client = ManusClient()
-        file_bytes = await manus_client.download_artifact(task.result_file_url)
-
-        file_b64 = base64.b64encode(file_bytes).decode("utf-8")
-        content_type = _guess_content_type(file_name)
-
-        attachment = Attachment(
-            name=file_name,
-            content_type=content_type,
-            content_url=f"data:{content_type};base64,{file_b64}",
-        )
-
-        async def send_file(turn_context: TurnContext):
-            reply = Activity(
-                type="message",
-                text=f"Die Wettbewerbsanalyse für **{task.unternehmen}** ist fertig!",
-                attachments=[attachment],
+    if download_url:
+        async def send_link(turn_context: TurnContext):
+            await turn_context.send_activity(
+                f"Die Wettbewerbsanalyse für **{task.unternehmen}** ist fertig!\n\n"
+                f"[{file_name} herunterladen]({download_url})"
             )
-            await turn_context.send_activity(reply)
 
-        await adapter.continue_conversation(conv_ref, send_file, settings.microsoft_app_id)
+        await adapter.continue_conversation(conv_ref, send_link, settings.microsoft_app_id)
     else:
         async def send_notice(turn_context: TurnContext):
             await turn_context.send_activity(
                 f"Die Wettbewerbsanalyse für **{task.unternehmen}** ist fertig!\n\n"
-                "Leider konnte keine Datei heruntergeladen werden."
+                "Leider konnte keine Datei gefunden werden."
             )
 
         await adapter.continue_conversation(conv_ref, send_notice, settings.microsoft_app_id)
-
-
-def _guess_content_type(filename: str) -> str:
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    return {
-        "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "pdf": "application/pdf",
-        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "zip": "application/zip",
-    }.get(ext, "application/octet-stream")
 
 
 # ---------------------------------------------------------------------------
