@@ -11,7 +11,7 @@ class CreateTaskRequest(BaseModel):
 
 class TaskResponse(BaseModel):
     task_id: str
-    status: str
+    status: str = ""
     output: str | None = None
     artifacts: list[dict] | None = None
 
