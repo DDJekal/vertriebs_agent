@@ -1,7 +1,7 @@
 """Teams Bot – ActivityHandler für eingehende Nachrichten."""
 
+import json
 import logging
-from datetime import datetime, timezone
 
 from botbuilder.core import ActivityHandler, TurnContext
 from botbuilder.schema import ChannelAccount
@@ -28,7 +28,6 @@ class SalesBot(ActivityHandler):
         """Verarbeitet eingehende Nachrichten in Teams."""
         text = turn_context.activity.text or ""
 
-        # @mention-Tag entfernen
         text = self._strip_mention(text, turn_context)
         text = text.strip()
 
@@ -44,7 +43,9 @@ class SalesBot(ActivityHandler):
         user_name = turn_context.activity.from_property.name or "Unbekannt"
         conversation_id = turn_context.activity.conversation.id
 
-        # Input klassifizieren und extrahieren
+        conv_ref = TurnContext.get_conversation_reference(turn_context.activity)
+        conv_ref_json = json.dumps(conv_ref.serialize(), ensure_ascii=False)
+
         modus = classify_input(text)
         extraction = await extract_fields(text, modus)
         validation = validate_fields(extraction)
@@ -53,10 +54,8 @@ class SalesBot(ActivityHandler):
             await turn_context.send_activity(validation.reply_message)
             return
 
-        # Manus-Prompt generieren
         manus_prompt = build_manus_prompt(extraction)
 
-        # Task in DB speichern
         db = self.db_session_factory()
         try:
             task = AnalysisTask(
@@ -70,16 +69,15 @@ class SalesBot(ActivityHandler):
                 teams_user_name=user_name,
                 teams_conversation_id=conversation_id,
                 teams_activity_id=turn_context.activity.id,
+                conversation_reference=conv_ref_json,
                 status=TaskStatus.PROCESSING,
             )
             db.add(task)
             db.commit()
             db.refresh(task)
 
-            # Bestätigung senden
             await turn_context.send_activity(validation.reply_message)
 
-            # Manus-Task erstellen
             try:
                 manus_client = ManusClient()
                 manus_response = await manus_client.create_task(manus_prompt)

@@ -37,6 +37,7 @@ class AnalysisTask(Base):
         Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False
     )
     result_file_url = Column(String(1000), nullable=True)
+    result_file_name = Column(String(500), nullable=True)
     error_message = Column(Text, nullable=True)
 
     # Teams-Kontext
@@ -44,6 +45,7 @@ class AnalysisTask(Base):
     teams_user_name = Column(String(300), nullable=True)
     teams_conversation_id = Column(String(500), nullable=True)
     teams_activity_id = Column(String(500), nullable=True)
+    conversation_reference = Column(Text, nullable=True)
 
     # Input-Modus
     input_modus = Column(String(20), nullable=True)

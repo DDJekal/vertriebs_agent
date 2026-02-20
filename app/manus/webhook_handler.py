@@ -17,35 +17,50 @@ async def handle_manus_webhook(event: WebhookEvent, db: Session) -> AnalysisTask
     Returns:
         Den aktualisierten Task oder None wenn nicht gefunden.
     """
+    task_id = event.task_id
+    if not task_id:
+        logger.warning("Webhook ohne task_id empfangen: %s", event.event_id)
+        return None
+
     task = (
         db.query(AnalysisTask)
-        .filter(AnalysisTask.manus_task_id == event.task_id)
+        .filter(AnalysisTask.manus_task_id == task_id)
         .first()
     )
 
     if not task:
-        logger.warning("Webhook für unbekannten Task: %s", event.task_id)
+        logger.warning("Webhook für unbekannten Task: %s", task_id)
         return None
 
-    if event.event_type == "task_stopped":
-        if event.error:
-            task.status = TaskStatus.FAILED
-            task.error_message = event.error
-            logger.error("Manus task failed: %s – %s", event.task_id, event.error)
-        else:
+    if event.event_type == "task_stopped" and event.task_detail:
+        detail = event.task_detail
+
+        if detail.stop_reason == "finish":
             task.status = TaskStatus.COMPLETED
             task.completed_at = datetime.now(timezone.utc)
-            logger.info("Manus task completed: %s", event.task_id)
+            logger.info("Manus task completed: %s", task_id)
 
-            if event.artifacts:
-                file_urls = [
-                    a.get("url") for a in event.artifacts if a.get("url")
-                ]
-                if file_urls:
-                    task.result_file_url = file_urls[0]
+            if detail.attachments:
+                task.result_file_url = detail.attachments[0].url
+                task.result_file_name = detail.attachments[0].file_name
 
-    elif event.event_type == "task_progress":
-        logger.info("Manus task progress: %s", event.task_id)
+        elif detail.stop_reason == "ask":
+            logger.info("Manus task wartet auf Input: %s – %s", task_id, detail.message)
+
+        else:
+            task.status = TaskStatus.FAILED
+            task.error_message = detail.message or "Unbekannter Stop-Grund"
+            logger.error("Manus task stopped unexpectedly: %s", task_id)
+
+    elif event.event_type == "task_progress" and event.progress_detail:
+        logger.info(
+            "Manus task progress: %s – %s",
+            task_id,
+            event.progress_detail.message,
+        )
+
+    elif event.event_type == "task_created":
+        logger.info("Manus task created webhook: %s", task_id)
 
     db.commit()
     db.refresh(task)
