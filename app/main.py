@@ -24,12 +24,16 @@ from app.manus.schemas import WebhookEvent
 from app.manus.webhook_handler import handle_manus_webhook
 from app.models.task import AnalysisTask, TaskStatus
 from app.teams.messages import adapter, bot
-from app.slack.app import slack_app
-from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
-from slack_sdk import WebClient
 
-slack_handler = AsyncSlackRequestHandler(slack_app)
-slack_client = WebClient(token=settings.slack_bot_token)
+slack_handler = None
+slack_web_client = None
+if settings.slack_bot_token and settings.slack_signing_secret:
+    from app.slack.app import slack_app
+    from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
+    from slack_sdk.web.async_client import AsyncWebClient
+
+    slack_handler = AsyncSlackRequestHandler(slack_app)
+    slack_web_client = AsyncWebClient(token=settings.slack_bot_token)
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
@@ -225,7 +229,10 @@ async def _send_result_to_slack(task: AnalysisTask):
             "Bitte prüfe den Status direkt in Manus."
         )
     
-    slack_client.chat_postMessage(
+    if slack_web_client is None:
+        logger.error("Slack nicht konfiguriert – kann Ergebnis nicht senden")
+        return
+    await slack_web_client.chat_postMessage(
         channel=task.slack_channel_id,
         text=message,
     )
@@ -237,6 +244,8 @@ async def _send_result_to_slack(task: AnalysisTask):
 @app.post("/api/slack/events")
 async def slack_events(request: Request):
     """Empfängt Slack Events (Nachrichten, Mentions, etc.)."""
+    if slack_handler is None:
+        raise HTTPException(status_code=503, detail="Slack ist nicht konfiguriert")
     return await slack_handler.handle(request)
 
 

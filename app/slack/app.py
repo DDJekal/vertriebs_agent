@@ -1,6 +1,7 @@
 """Slack Bolt App – Konfiguration und Event-Registrierung."""
 
 import logging
+import re
 from slack_bolt.async_app import AsyncApp
 
 from app.config import settings
@@ -14,13 +15,15 @@ slack_app = AsyncApp(
     signing_secret=settings.slack_signing_secret,
 )
 
+_MENTION_RE = re.compile(r"<@[A-Z0-9]+>")
+
 
 @slack_app.event("message")
 async def message_handler(event, say):
     """Handler für eingehende Slack-Nachrichten (DMs und Channels)."""
     if event.get("subtype") is not None:
         return
-    
+
     db = SessionLocal()
     try:
         await handle_slack_message(event, say, db)
@@ -35,7 +38,6 @@ async def message_handler(event, say):
 async def mention_handler(event, say):
     """Handler für Bot-Mentions (@BotName)."""
     text = event.get("text", "")
-    if slack_app.client.auth_test()["user_id"] in text:
-        text = text.replace(f"<@{slack_app.client.auth_test()['user_id']}>", "").strip()
-        event["text"] = text
-        await message_handler(event, say)
+    text = _MENTION_RE.sub("", text).strip()
+    event["text"] = text
+    await message_handler(event, say)
