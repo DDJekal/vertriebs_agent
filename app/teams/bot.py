@@ -65,6 +65,7 @@ class SalesBot(ActivityHandler):
                 zusatzkontext=extraction.zusatzkontext,
                 manus_prompt=manus_prompt,
                 input_modus=modus.value,
+                source_platform="teams",
                 teams_user_id=user_id,
                 teams_user_name=user_name,
                 teams_conversation_id=conversation_id,

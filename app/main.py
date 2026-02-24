@@ -24,6 +24,12 @@ from app.manus.schemas import WebhookEvent
 from app.manus.webhook_handler import handle_manus_webhook
 from app.models.task import AnalysisTask, TaskStatus
 from app.teams.messages import adapter, bot
+from app.slack.app import slack_app
+from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
+from slack_sdk import WebClient
+
+slack_handler = AsyncSlackRequestHandler(slack_app)
+slack_client = WebClient(token=settings.slack_bot_token)
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
@@ -150,44 +156,88 @@ async def manus_webhook(request: Request, db: Session = Depends(get_db)):
     if not task:
         return {"status": "ok", "detail": "Task nicht in DB (ggf. test event)"}
 
-    if task.status == TaskStatus.COMPLETED and task.conversation_reference:
+    if task.status == TaskStatus.COMPLETED:
         try:
-            await _send_result_to_teams(task)
-            logger.info(
-                "Präsentation an %s gesendet (Task %s)",
-                task.teams_user_name,
-                task.id,
-            )
+            if task.source_platform == "slack" and task.slack_channel_id:
+                await _send_result_to_slack(task)
+                logger.info(
+                    "Präsentation an Slack-User %s gesendet (Task %s)",
+                    task.slack_user_id,
+                    task.id,
+                )
+            elif task.conversation_reference:
+                await _send_result_to_teams(task)
+                logger.info(
+                    "Präsentation an %s gesendet (Task %s)",
+                    task.teams_user_name,
+                    task.id,
+                )
         except Exception as e:
-            logger.error("Fehler beim Senden an Teams: %s", e, exc_info=True)
+            logger.error("Fehler beim Senden der Präsentation: %s", e, exc_info=True)
 
     return {"status": "ok", "task_id": task.id, "task_status": task.status.value}
 
 
 async def _send_result_to_teams(task: AnalysisTask):
-    """Sendet den Download-Link der fertigen Präsentation proaktiv an Teams."""
+    """Sendet den PDF-Download-Link der fertigen Praesentation proaktiv an Teams."""
     conv_ref_data = json.loads(task.conversation_reference)
     conv_ref = ConversationReference().deserialize(conv_ref_data)
 
-    file_name = task.result_file_name or "Wettbewerbsanalyse"
+    display_name = task.unternehmen or "Wettbewerbsanalyse"
+    file_name = task.result_file_name or "Wettbewerbsanalyse.pdf"
     download_url = task.result_file_url
 
     if download_url:
-        async def send_link(turn_context: TurnContext):
-            await turn_context.send_activity(
-                f"Die Wettbewerbsanalyse für **{task.unternehmen}** ist fertig!\n\n"
-                f"[{file_name} herunterladen]({download_url})"
-            )
-
-        await adapter.continue_conversation(conv_ref, send_link, settings.microsoft_app_id)
+        link_text = (
+            f"Die Wettbewerbsanalyse für **{display_name}** ist fertig!\n\n"
+            f"📄 [{file_name}]({download_url})"
+        )
     else:
-        async def send_notice(turn_context: TurnContext):
-            await turn_context.send_activity(
-                f"Die Wettbewerbsanalyse für **{task.unternehmen}** ist fertig!\n\n"
-                "Leider konnte keine Datei gefunden werden."
-            )
+        link_text = (
+            f"Die Wettbewerbsanalyse für **{display_name}** wurde abgeschlossen, "
+            "aber es konnte kein Download-Link ermittelt werden. "
+            "Bitte prüfe den Status direkt in Manus."
+        )
 
-        await adapter.continue_conversation(conv_ref, send_notice, settings.microsoft_app_id)
+    async def send_link(turn_context: TurnContext):
+        await turn_context.send_activity(link_text)
+
+    await adapter.continue_conversation(conv_ref, send_link, settings.microsoft_app_id)
+
+
+async def _send_result_to_slack(task: AnalysisTask):
+    """Sendet den PDF-Download-Link der fertigen Praesentation proaktiv an Slack."""
+    display_name = task.unternehmen or "Wettbewerbsanalyse"
+    file_name = task.result_file_name or "Wettbewerbsanalyse.pdf"
+    download_url = task.result_file_url
+    
+    user_mention = f"<@{task.slack_user_id}>" if task.slack_user_id else ""
+    
+    if download_url:
+        message = (
+            f"{user_mention} Die Wettbewerbsanalyse für *{display_name}* ist fertig!\n\n"
+            f"📄 <{download_url}|{file_name}>"
+        )
+    else:
+        message = (
+            f"{user_mention} Die Wettbewerbsanalyse für *{display_name}* wurde abgeschlossen, "
+            "aber es konnte kein Download-Link ermittelt werden. "
+            "Bitte prüfe den Status direkt in Manus."
+        )
+    
+    slack_client.chat_postMessage(
+        channel=task.slack_channel_id,
+        text=message,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Slack Bot Events Endpoint
+# ---------------------------------------------------------------------------
+@app.post("/api/slack/events")
+async def slack_events(request: Request):
+    """Empfängt Slack Events (Nachrichten, Mentions, etc.)."""
+    return await slack_handler.handle(request)
 
 
 # ---------------------------------------------------------------------------

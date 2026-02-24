@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     microsoft_app_password: str = Field(default="", description="Azure AD App Secret")
     microsoft_tenant_id: str = Field(default="", description="Azure AD Tenant ID (Single Tenant)")
 
+    # Slack
+    slack_bot_token: str = Field(default="", description="Slack Bot Token (xoxb-...)")
+    slack_signing_secret: str = Field(default="", description="Slack Signing Secret")
+
     # Datenbank
     database_url: str = Field(
         default="sqlite:///./salesbot.db",

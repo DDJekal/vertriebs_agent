@@ -5,8 +5,22 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.manus.schemas import WebhookEvent
+from app.manus.schemas import WebhookAttachment, WebhookEvent
 from app.models.task import AnalysisTask, TaskStatus
+
+_PREFERRED_EXTENSIONS = (".pdf", ".pptx", ".html", ".docx", ".xlsx")
+
+
+def _pick_best_attachment(attachments: list[WebhookAttachment]) -> WebhookAttachment:
+    """Waehlt das beste Attachment: PDF > PPTX > HTML > Rest. Ignoriert slides.json."""
+    for ext in _PREFERRED_EXTENSIONS:
+        for att in attachments:
+            if att.file_name.lower().endswith(ext):
+                return att
+    for att in attachments:
+        if not att.file_name.lower().endswith(".json"):
+            return att
+    return attachments[0]
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +55,12 @@ async def handle_manus_webhook(event: WebhookEvent, db: Session) -> AnalysisTask
             logger.info("Manus task completed: %s", task_id)
 
             if detail.attachments:
-                task.result_file_url = detail.attachments[0].url
-                task.result_file_name = detail.attachments[0].file_name
+                preferred = _pick_best_attachment(detail.attachments)
+                task.result_file_url = preferred.url
+                task.result_file_name = preferred.file_name
+
+            if detail.task_url:
+                task.manus_task_url = detail.task_url
 
         elif detail.stop_reason == "ask":
             logger.info("Manus task wartet auf Input: %s – %s", task_id, detail.message)

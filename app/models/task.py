@@ -33,6 +33,7 @@ class AnalysisTask(Base):
 
     # Manus-Tracking
     manus_task_id = Column(String(200), nullable=True, index=True)
+    manus_task_url = Column(String(1000), nullable=True)
     status = Column(
         Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False
     )
@@ -40,12 +41,19 @@ class AnalysisTask(Base):
     result_file_name = Column(String(500), nullable=True)
     error_message = Column(Text, nullable=True)
 
+    # Plattform-Kontext
+    source_platform = Column(String(20), default="teams", nullable=False)
+
     # Teams-Kontext
     teams_user_id = Column(String(200), nullable=True)
     teams_user_name = Column(String(300), nullable=True)
     teams_conversation_id = Column(String(500), nullable=True)
     teams_activity_id = Column(String(500), nullable=True)
     conversation_reference = Column(Text, nullable=True)
+
+    # Slack-Kontext
+    slack_channel_id = Column(String(200), nullable=True)
+    slack_user_id = Column(String(200), nullable=True)
 
     # Input-Modus
     input_modus = Column(String(20), nullable=True)
