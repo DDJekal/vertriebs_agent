@@ -6,7 +6,6 @@ SKILL_PREAMBLE = (
     "Ich brauche eine Wettbewerbsanalyse.\n\n"
     "**Wichtig – halte dich exakt an den Skill** "
     "`/wettbewerbsanalyse-generator-v2` "
-    "(Datei: `/home/ubuntu/skills/wettbewerbsanalyse-generator-v2/SKILL.md`). "
     "Lies ihn als ALLERERSTEN Schritt und folge dem Workflow.\n\n"
 )
 
