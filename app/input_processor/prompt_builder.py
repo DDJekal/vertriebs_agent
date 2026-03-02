@@ -4,9 +4,10 @@ from app.input_processor.extractor import ExtractionResult
 
 SKILL_PREAMBLE = (
     "Ich brauche eine Wettbewerbsanalyse.\n\n"
-    "**Wichtig – halte dich exakt an den Skill** "
-    "`/wettbewerbsanalyse-generator-v2` "
-    "Lies ihn als ALLERERSTEN Schritt und folge dem Workflow.\n\n"
+    "**Wichtig – halte dich exakt an den Skill `wettbewerbsanalyse-generator-v2`.** "
+    "Lies als ALLERERSTEN Schritt die Datei "
+    "`/home/ubuntu/skills/wettbewerbsanalyse-generator-v2/SKILL.md` "
+    "und folge dem dort definierten Workflow.\n\n"
 )
 
 SKILL_POSTAMBLE = (
