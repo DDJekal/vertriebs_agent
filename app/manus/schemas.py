@@ -7,6 +7,7 @@ class CreateTaskRequest(BaseModel):
     prompt: str
     project_id: str | None = None
     task_mode: str = "agent"
+    interactiveMode: bool = True
 
 
 class TaskResponse(BaseModel):

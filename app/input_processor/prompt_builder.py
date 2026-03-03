@@ -15,11 +15,13 @@ SKILL_POSTAMBLE = (
     "**Zusätzliche Regeln:**\n"
     "- Arbeite den GESAMTEN Workflow autonom ab – stelle KEINE Zwischenfragen "
     "und warte NICHT auf Bestätigung. Es gibt keinen interaktiven User.\n"
-    "- Die HTML-Basis kommt aus dem Python-Skript. Danach visuell prüfen "
+    "- Die HTML-Basis kommt aus dem Python-Skript (`--html-dir`). "
+    "Lade die generierten HTMLs in Manus Slides, dann visuell prüfen "
     "und bei Abweichungen per `slide_edit` nachkorrigieren.\n"
-    "- Kein Inhalt darf den Footer überlappen (untere 52px sind reserviert).\n"
-    "- Gleiche das Ergebnis am Ende mit den Referenz-PDFs im Projektkontext ab.\n"
-    "- Exportiere direkt als PDF und hänge die Datei an. Keine Links, keine Viewer-URLs.\n"
+    "- Gleiche das Ergebnis mit den Referenz-PDFs im Projektkontext ab "
+    "und ergänze fehlende Elemente per `slide_edit`.\n"
+    "- Kein Inhalt darf den Footer überlappen (untere 44px sind reserviert).\n"
+    "- Exportiere als PDF und hänge die Datei direkt an. Keine Links, keine Viewer-URLs.\n"
 )
 
 
