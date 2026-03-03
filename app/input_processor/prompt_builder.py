@@ -2,11 +2,9 @@
 
 from app.input_processor.extractor import ExtractionResult
 
-SKILL_PREAMBLE = (
-    "/wettbewerbsanalyse-generator-v2\n"
-    "Erstelle eine Wettbewerbsanalyse. Nutze den oben referenzierten Skill "
-    "und folge dem dort definierten Workflow EXAKT.\n\n"
-)
+# Skill-Anweisung steht in den Project Instructions (System-Prompt).
+# Der Bot sendet nur die strukturierte Anfrage – kein Slash-Command.
+SKILL_PREAMBLE = "Erstelle eine Wettbewerbsanalyse für:\n\n"
 
 SKILL_POSTAMBLE = (
     "\n\n---\n"
