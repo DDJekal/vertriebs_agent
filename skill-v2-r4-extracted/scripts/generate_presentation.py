@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Wettbewerbsanalyse Präsentations-Generator v2.3
+Wettbewerbsanalyse Präsentations-Generator v2.5
 ================================================
 Liest research_data.json → erzeugt 7 HTML-Folien → exportiert direkt als PDF.
 
-NEU in v2.3:
-- Direkter PDF-Export via chromium-browser (kein Manus-Slides-Tool nötig)
-- Echtes 16:9-Format (1280×720px) mit @page CSS-Regel
-- Gebäudebilder der Wettbewerber werden via requests heruntergeladen und als
-  base64 eingebettet (kein CDN-Abhängigkeit beim Rendern)
-- Titelfolie: Hintergrundbild ebenfalls base64-eingebettet
-- Radar auf Folie 3 vergrößert (280px)
-- Alle Texte größer, kein abgeschnittener Inhalt
+NEU in v2.5:
+- Folie 1: Stadtbild/Standortbild (background_image_url), Fallback via Unsplash
+- Folie 2: Pro Wettbewerber Unternehmensgebäude (building_image_url) bevorzugt, Fallback Logo (logo_url/Clearbit)
+- Chancen-Folie auf HiOffice-Dienstleistungen ausgerichtet (branchenspezifisch)
+- Konsistenz-Regeln für Datenformate (Gehalt, Mitarbeiter, Entfernung)
 
 Usage:
     python3 generate_presentation.py <input.json> <output.pdf>
@@ -158,10 +155,10 @@ def competitor_card(c: dict, img_b64: str) -> str:
     weakness = c.get('weakness', '')
 
     if img_b64:
-        img_html = f'<div style="width:100%;height:148px;overflow:hidden;flex-shrink:0;"><img src="{img_b64}" style="width:100%;height:148px;object-fit:cover;" /></div>'
+        img_html = f'<div style="width:100%;height:120px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;"><img src="{img_b64}" style="width:100%;height:100%;object-fit:cover;" /></div>'
     else:
         initials = ''.join(w[0] for w in name.split()[:2]).upper()
-        img_html = f'<div style="width:100%;height:148px;background:linear-gradient(135deg,#0d2080,#1a3a8f);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:rgba(255,255,255,0.35);font-size:48px;font-weight:800;">{initials}</span></div>'
+        img_html = f'<div style="width:100%;height:120px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="color:#001666;font-size:42px;font-weight:800;letter-spacing:2px;">{initials}</span></div>'
 
     return f'''<div style="background:white;border-radius:8px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
     {img_html}
@@ -185,8 +182,9 @@ def competitor_card(c: dict, img_b64: str) -> str:
 
 def slide_2(d: dict, images: dict) -> str:
     competitors = d.get('competitors', [])[:3]
+    # Folie 2: Pro Wettbewerber Unternehmensgebäude bevorzugt, sonst Logo
     cards = '\n'.join(
-        competitor_card(c, images.get(f'competitor_{i}', ''))
+        competitor_card(c, images.get(f'competitor_building_{i}', '') or images.get(f'competitor_{i}', ''))
         for i, c in enumerate(competitors)
     )
     content = f'''{title_bar("LOKALER WETTBEWERB")}
@@ -456,18 +454,40 @@ def slide_7(d: dict, images: dict) -> str:
 def preload_images(d: dict) -> dict:
     """Lädt alle Bilder herunter und gibt ein Dict mit base64-Daten zurück."""
     images = {}
+    location = d.get('location', 'city')
     print("  Lade Bilder...")
 
     bg_url = d.get('background_image_url', '')
     if bg_url:
-        print(f"    Hintergrundbild: {bg_url[:60]}...")
+        print(f"    Hintergrund/Stadtbild: {bg_url[:60]}...")
         images['background'] = fetch_image_b64(bg_url)
 
+    if not images.get('background'):
+        fallback = f"https://source.unsplash.com/1280x720/?{location},city,panorama"
+        print(f"    Hintergrund Fallback (Stadtbild {location}): {fallback[:60]}...")
+        images['background'] = fetch_image_b64(fallback)
+
+    # Folie 2: Pro Wettbewerber Gebäudebild, Fallback Logo
     for i, comp in enumerate(d.get('competitors', [])[:3]):
-        url = comp.get('image_url', '')
+        build_url = comp.get('building_image_url', '')
+        if build_url:
+            print(f"    Wettbewerber {i+1} Gebäude: {build_url[:60]}...")
+            images[f'competitor_building_{i}'] = fetch_image_b64(build_url)
+
+        url = comp.get('logo_url', '') or comp.get('image_url', '')
         if url:
-            print(f"    Wettbewerber {i+1}: {url[:60]}...")
+            print(f"    Wettbewerber {i+1} Logo: {url[:60]}...")
             images[f'competitor_{i}'] = fetch_image_b64(url)
+
+        if not images.get(f'competitor_{i}'):
+            domain = comp.get('domain', '')
+            if domain:
+                clearbit_url = f"https://logo.clearbit.com/{domain}"
+                print(f"    Wettbewerber {i+1} Clearbit Fallback: {clearbit_url[:60]}...")
+                images[f'competitor_{i}'] = fetch_image_b64(clearbit_url)
+
+        if not images.get(f'competitor_building_{i}') and not images.get(f'competitor_{i}'):
+            print(f"    Wettbewerber {i+1}: Kein Gebäude/Logo – Initialen-Platzhalter wird verwendet.")
 
     return images
 
