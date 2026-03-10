@@ -108,10 +108,16 @@ async def create_briefing(
     # Routing: Talent-Report oder HiOffice-Wettbewerbsanalyse
     if modus == InputModus.TALENT_REPORT:
         manus_prompt = build_talent_report_prompt(extraction)
-        project_id = settings.manus_talent_report_project_id or settings.manus_project_id or None
+        raw_id = (settings.manus_talent_report_project_id or "").strip() or (settings.manus_project_id or "").strip()
+        project_id = raw_id or None
+        logger.info(
+            "Talent-Report: MANUS_TALENT_REPORT_PROJECT_ID=%s, verwende project_id=%s",
+            "gesetzt" if (settings.manus_talent_report_project_id or "").strip() else "leer",
+            "gesetzt" if project_id else "leer (404 moeglich)",
+        )
     else:
         manus_prompt = build_manus_prompt(extraction)
-        project_id = settings.manus_project_id or None
+        project_id = (settings.manus_project_id or "").strip() or None
 
     task = AnalysisTask(
         unternehmen=extraction.unternehmen,

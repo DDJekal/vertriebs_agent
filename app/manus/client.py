@@ -14,7 +14,8 @@ class ManusClient:
     def __init__(self, project_id: str | None = None):
         self.base_url = settings.manus_api_base_url.rstrip("/")
         self.api_key = settings.manus_api_key
-        self.project_id = project_id if project_id is not None else (settings.manus_project_id or None)
+        raw = project_id if project_id is not None else (settings.manus_project_id or None)
+        self.project_id = (raw.strip() if raw else None) or None
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -26,8 +27,13 @@ class ManusClient:
         """Erstellt einen neuen Task in Manus."""
         request = CreateTaskRequest(
             prompt=prompt,
-            project_id=self.project_id,
+            project_id=self.project_id or None,
             task_mode="agent",
+        )
+
+        logger.info(
+            "Manus create_task: project_id=%s",
+            "gesetzt" if self.project_id else "NICHT GESETZT (404-Risiko)",
         )
 
         async with httpx.AsyncClient(timeout=30.0) as client:
