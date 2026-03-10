@@ -2,9 +2,8 @@
 
 from app.input_processor.extractor import ExtractionResult
 
-# Skill-Anweisung steht in den Project Instructions (System-Prompt).
-# Der Bot sendet nur die strukturierte Anfrage – kein Slash-Command.
-SKILL_PREAMBLE = "Erstelle eine Wettbewerbsanalyse für:\n\n"
+# Slash-Command aktiviert den Skill direkt in Manus (zuverlaessiger als nur Systemprompt).
+SKILL_PREAMBLE = "/wettbewerbsanalyse-generator-v2\n\nErstelle eine Wettbewerbsanalyse für:\n\n"
 
 SKILL_POSTAMBLE = (
     "\n\n---\n"
