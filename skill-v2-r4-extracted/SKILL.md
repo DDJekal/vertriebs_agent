@@ -17,8 +17,8 @@ Position:    [Berufsbezeichnung]
 
 ## Vorlage & CI
 
-- **Python-Skript:** `/home/ubuntu/skills/wettbewerbsanalyse-generator-v2/scripts/generate_presentation.py`
-- **CI-Logo (SVG):** `/home/ubuntu/skills/wettbewerbsanalyse-generator-v2/templates/Hioffice_logo_white.svg`
+- **Python-Skript:** Im selben Ordner wie diese SKILL.md unter `scripts/generate_presentation.py` (Pfad zur Laufzeit per `find` ermitteln - siehe Schritt 2)
+- **CI-Logo (SVG):** Im selben Ordner wie diese SKILL.md unter `templates/Hioffice_logo_white.svg`
 
 | Parameter | Wert |
 |---|---|
@@ -180,8 +180,25 @@ Format: `"Keyword - Erklaerung (max. 65 Zeichen)"`
 
 ### Schritt 2 - HTML-Folien generieren (PFLICHT - kein manuelles HTML von Grund auf!)
 
+Das Skript befindet sich im selben Ordner wie diese SKILL.md unter `scripts/generate_presentation.py`.
+**Schritt 2a:** Pfad zum Skript ermitteln:
+
 ```bash
-python3 /home/ubuntu/skills/wettbewerbsanalyse-generator-v2/scripts/generate_presentation.py \
+SKILL_DIR=$(find /home/ubuntu -name "generate_presentation.py" 2>/dev/null | grep "wettbewerbsanalyse-generator-v2" | head -1 | xargs dirname | xargs dirname)
+echo "Skill-Verzeichnis: $SKILL_DIR"
+```
+
+Falls das Skript nicht gefunden wird, suche nach der SKILL.md:
+```bash
+SKILL_DIR=$(find /home/ubuntu -name "SKILL.md" 2>/dev/null | xargs grep -l "wettbewerbsanalyse-generator-v2" 2>/dev/null | head -1 | xargs dirname)
+echo "Skill-Verzeichnis: $SKILL_DIR"
+```
+
+**Schritt 2b:** Skript ausfuehren:
+
+```bash
+mkdir -p /home/ubuntu/slides/
+python3 "$SKILL_DIR/scripts/generate_presentation.py" \
   /home/ubuntu/research_data.json \
   --html-dir /home/ubuntu/slides/
 ```
