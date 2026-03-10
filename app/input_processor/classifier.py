@@ -1,4 +1,4 @@
-"""Erkennt ob ein Input Rich (Gesprächsnotizen) oder Minimal (3-4 Felder) ist."""
+"""Erkennt ob ein Input Rich (Gesprächsnotizen), Minimal (3-4 Felder) oder Talent-Report ist."""
 
 import enum
 import re
@@ -8,6 +8,13 @@ class InputModus(str, enum.Enum):
     RICH = "rich"
     MINIMAL = "minimal"
     STRUCTURED = "structured"
+    TALENT_REPORT = "talent_report"
+
+
+_TALENT_REPORT_PATTERN = re.compile(
+    r"^\s*talent[-\s]?report\b",
+    re.IGNORECASE,
+)
 
 
 _RICH_INDICATORS = [
@@ -42,6 +49,9 @@ _STRUCTURED_PATTERN = re.compile(
 
 def classify_input(text: str) -> InputModus:
     """Klassifiziert den Input-Modus anhand von Heuristiken."""
+
+    if _TALENT_REPORT_PATTERN.search(text):
+        return InputModus.TALENT_REPORT
 
     if _STRUCTURED_PATTERN.search(text):
         return InputModus.STRUCTURED

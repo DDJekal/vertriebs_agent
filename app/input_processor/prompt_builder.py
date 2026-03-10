@@ -5,6 +5,8 @@ from app.input_processor.extractor import ExtractionResult
 # Slash-Command aktiviert den Skill direkt in Manus (zuverlaessiger als nur Systemprompt).
 SKILL_PREAMBLE = "/wettbewerbsanalyse-generator-v2\n\nErstelle eine Wettbewerbsanalyse für:\n\n"
 
+TALENT_REPORT_PREAMBLE = "/wettbewerbsanalyse-talent-report\n\nErstelle einen Talent Report für:\n\n"
+
 SKILL_POSTAMBLE = (
     "\n\n---\n"
     "**Zusätzliche Regeln:**\n"
@@ -74,6 +76,29 @@ def build_manus_prompt(extraction: ExtractionResult) -> str:
     if extraction.zusatzkontext:
         prompt += (
             "\n\n**Zusätzlicher Kontext aus dem Erstgespräch:**\n"
+            f"{extraction.zusatzkontext}"
+        )
+
+    prompt += SKILL_POSTAMBLE
+
+    return prompt
+
+
+def build_talent_report_prompt(extraction: ExtractionResult) -> str:
+    """Generiert den Talent-Report-Prompt fuer Manus."""
+
+    zielgruppe = extraction.zielgruppe or extraction.position or ""
+
+    prompt = (
+        f"{TALENT_REPORT_PREAMBLE}"
+        f"**Unternehmen:** {extraction.unternehmen}\n"
+        f"**Standort:** {extraction.standort}\n"
+        f"**Zielgruppe:** {zielgruppe}"
+    )
+
+    if extraction.zusatzkontext:
+        prompt += (
+            "\n\n**Zusätzlicher Kontext:**\n"
             f"{extraction.zusatzkontext}"
         )
 

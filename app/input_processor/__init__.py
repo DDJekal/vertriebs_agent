@@ -1,7 +1,7 @@
 from app.input_processor.classifier import classify_input, InputModus
 from app.input_processor.extractor import extract_fields
 from app.input_processor.validator import validate_fields, ValidationResult
-from app.input_processor.prompt_builder import build_manus_prompt
+from app.input_processor.prompt_builder import build_manus_prompt, build_talent_report_prompt
 
 __all__ = [
     "classify_input",
@@ -10,4 +10,5 @@ __all__ = [
     "validate_fields",
     "ValidationResult",
     "build_manus_prompt",
+    "build_talent_report_prompt",
 ]

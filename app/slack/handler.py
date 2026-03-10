@@ -3,11 +3,14 @@
 import logging
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.input_processor import (
     build_manus_prompt,
+    build_talent_report_prompt,
     classify_input,
     extract_fields,
     validate_fields,
+    InputModus,
 )
 from app.manus.client import ManusClient
 from app.models.task import AnalysisTask, TaskStatus
@@ -43,7 +46,13 @@ async def handle_slack_message(event: dict, say, db: Session):
         await say(validation.reply_message)
         return
     
-    manus_prompt = build_manus_prompt(extraction)
+    # Routing: Talent-Report oder HiOffice-Wettbewerbsanalyse
+    if modus == InputModus.TALENT_REPORT:
+        manus_prompt = build_talent_report_prompt(extraction)
+        project_id = settings.manus_talent_report_project_id or settings.manus_project_id or None
+    else:
+        manus_prompt = build_manus_prompt(extraction)
+        project_id = settings.manus_project_id or None
     
     task = AnalysisTask(
         unternehmen=extraction.unternehmen,
@@ -64,7 +73,7 @@ async def handle_slack_message(event: dict, say, db: Session):
     await say(validation.reply_message)
     
     try:
-        manus_client = ManusClient()
+        manus_client = ManusClient(project_id=project_id)
         manus_response = await manus_client.create_task(manus_prompt)
         task.manus_task_id = manus_response.task_id
         db.commit()
@@ -94,6 +103,8 @@ def _help_text() -> str:
         "*Strukturiert:*\n"
         "```\n*Unternehmen:* Name\n*Standort:* Stadt\n"
         "*Position:* Berufsbezeichnung\n```\n\n"
+        "*Talent Report:*\n"
+        "```\ntalent-report\nUnternehmen\nStandort\nZielgruppe\n```\n\n"
         "Ich extrahiere die Daten, erstelle einen Manus-Auftrag "
         "und schicke dir die fertige Präsentation."
     )

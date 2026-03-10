@@ -15,9 +15,11 @@ from app.config import settings
 from app.database import get_db, init_db
 from app.input_processor import (
     build_manus_prompt,
+    build_talent_report_prompt,
     classify_input,
     extract_fields,
     validate_fields,
+    InputModus,
 )
 from app.manus.client import ManusClient
 from app.manus.schemas import WebhookEvent
@@ -103,7 +105,13 @@ async def create_briefing(
             status="needs_input",
         )
 
-    manus_prompt = build_manus_prompt(extraction)
+    # Routing: Talent-Report oder HiOffice-Wettbewerbsanalyse
+    if modus == InputModus.TALENT_REPORT:
+        manus_prompt = build_talent_report_prompt(extraction)
+        project_id = settings.manus_talent_report_project_id or settings.manus_project_id or None
+    else:
+        manus_prompt = build_manus_prompt(extraction)
+        project_id = settings.manus_project_id or None
 
     task = AnalysisTask(
         unternehmen=extraction.unternehmen,
@@ -121,7 +129,7 @@ async def create_briefing(
     db.refresh(task)
 
     try:
-        manus_client = ManusClient()
+        manus_client = ManusClient(project_id=project_id)
         manus_response = await manus_client.create_task(manus_prompt)
         task.manus_task_id = manus_response.task_id
         db.commit()

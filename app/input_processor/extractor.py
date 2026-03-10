@@ -38,6 +38,7 @@ class ExtractionResult:
     unternehmen: str | None = None
     standort: str | None = None
     position: str | None = None
+    zielgruppe: str | None = None
     zusatzkontext: str | None = None
     raw_input: str = ""
     input_modus: InputModus = InputModus.MINIMAL
@@ -132,8 +133,37 @@ async def _extract_with_llm(text: str, modus: InputModus) -> ExtractionResult:
     return result
 
 
+def _extract_talent_report(text: str) -> ExtractionResult:
+    """Extrahiert Felder aus einem Talent-Report-Input.
+
+    Erwartet folgendes Format (erste Zeile 'talent-report' wird ignoriert):
+        talent-report
+        Unternehmen
+        Standort
+        Zielgruppe
+    """
+    result = ExtractionResult(raw_input=text, input_modus=InputModus.TALENT_REPORT)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    # Erste Zeile ist "talent-report" – ueberspringen
+    data_lines = [l for l in lines if not re.match(r"^talent[-\s]?report$", l, re.IGNORECASE)]
+
+    if len(data_lines) >= 1:
+        result.unternehmen = data_lines[0]
+    if len(data_lines) >= 2:
+        result.standort = data_lines[1]
+    if len(data_lines) >= 3:
+        result.zielgruppe = data_lines[2]
+        result.position = data_lines[2]  # position = zielgruppe fuer Kompatibilitaet
+
+    return result
+
+
 async def extract_fields(text: str, modus: InputModus) -> ExtractionResult:
     """Hauptfunktion: Extrahiert Felder basierend auf dem Input-Modus."""
+
+    if modus == InputModus.TALENT_REPORT:
+        return _extract_talent_report(text)
 
     if modus == InputModus.STRUCTURED:
         return _extract_structured(text)

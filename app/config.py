@@ -9,7 +9,8 @@ class Settings(BaseSettings):
         default="https://api.manus.im/v1",
         description="Manus API Base URL",
     )
-    manus_project_id: str = Field(default="", description="Manus Project ID")
+    manus_project_id: str = Field(default="", description="Manus Project ID (HiOffice Wettbewerbsanalyse)")
+    manus_talent_report_project_id: str = Field(default="", description="Manus Project ID fuer Talent Report")
 
     # LLM
     openai_api_key: str = Field(default="", description="OpenAI API Key")

@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class ManusClient:
-    def __init__(self):
+    def __init__(self, project_id: str | None = None):
         self.base_url = settings.manus_api_base_url.rstrip("/")
         self.api_key = settings.manus_api_key
-        self.project_id = settings.manus_project_id or None
+        self.project_id = project_id if project_id is not None else (settings.manus_project_id or None)
 
     def _headers(self) -> dict[str, str]:
         return {
