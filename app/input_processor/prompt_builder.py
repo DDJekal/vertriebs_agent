@@ -50,6 +50,15 @@ SKILL_POSTAMBLE = (
     "Skript-Aufruf, damit das Projektlogo korrekt geladen wird.\n"
     "- Prüfe nach dem Generieren, dass das Logo im Footer jeder Folie "
     "sichtbar ist. Fehlt es, lade es manuell als base64 nach.\n"
+    "\n"
+    "**ALLE 7 FOLIEN – PFLICHT:**\n"
+    "- Lade JEDE der 7 HTML-Folien (slide_01.html bis slide_07.html) "
+    "nacheinander per `slide_edit`. KEINE Folie ueberspringen.\n"
+    "- ERST wenn alle 7 geladen und geprueft sind, als PDF exportieren.\n"
+    "- Das Radar (Folie 3), Balkendiagramm (Folie 4) und alle "
+    "Kartenstrukturen kommen fertig aus dem Skript – NICHT per "
+    "`slide_edit` umbauen oder ersetzen. Das Radar ist ein einfacher "
+    "SVG-Kreis (40km/20km-Ringe), KEIN Dimensionsradar, KEIN Spinnendiagramm.\n"
 )
 
 

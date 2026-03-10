@@ -39,7 +39,8 @@ def load_logo(path: Path, as_svg: bool) -> str:
             raw = f.read()
         b64 = base64.b64encode(raw).decode()
         return ("data:image/svg+xml;base64," if as_svg else "data:image/png;base64,") + b64
-    except Exception:
+    except Exception as e:
+        print(f"  WARNUNG: Logo konnte nicht geladen werden: {path} ({e})")
         return ""
 
 def load_logo_from_project(project_dir: str) -> str:
@@ -48,25 +49,47 @@ def load_logo_from_project(project_dir: str) -> str:
     for name, svg in [("logo.png", False), ("logo.svg", True)]:
         out = load_logo(Path(project_dir) / name, svg)
         if out:
+            print(f"  Logo aus Projektordner geladen: {Path(project_dir) / name}")
             return out
+    print(f"  INFO: Kein logo.png/logo.svg im Projektordner gefunden: {project_dir}")
     return ""
 
 def load_logo_from_skill() -> str:
     path = Path(__file__).resolve().parent.parent / "templates" / "logo.png"
-    return load_logo(path, False)
+    result = load_logo(path, False)
+    if result:
+        print(f"  Logo aus Skill-Templates geladen: {path}")
+    else:
+        print(f"  WARNUNG: Skill-Logo nicht gefunden: {path}")
+    return result
 
-def fetch_image_b64(url: str) -> str:
+def fetch_image_b64(url: str, retries: int = 2) -> str:
+    """Laedt ein Bild von URL und gibt einen base64 data-URI zurueck.
+    Versucht bis zu 2x mit 2s Pause. Validiert Content-Type und erkennt SVGs."""
     if not url:
         return ""
-    try:
-        import urllib.request
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = resp.read()
-            ct = resp.headers.get_content_type() or "image/jpeg"
-            return f"data:{ct};base64," + base64.b64encode(data).decode()
-    except Exception:
-        return ""
+    import urllib.request
+    import urllib.error
+    import time
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                ct = resp.headers.get_content_type() or "image/jpeg"
+                if not ct.startswith("image/"):
+                    print(f"    WARNUNG: URL liefert '{ct}' statt Bild (Fehlerseite?): {url[:80]}")
+                    return ""
+                data = resp.read()
+                if data[:4] == b"<svg" or data[:5] == b"<?xml":
+                    ct = "image/svg+xml"
+                return f"data:{ct};base64," + base64.b64encode(data).decode()
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"    Bild-Download fehlgeschlagen (Versuch {attempt+1}/{retries}): {e}")
+                time.sleep(2)
+            else:
+                print(f"    WARNUNG: Bild konnte nicht geladen werden: {url[:80]} ({e})")
+    return ""
 
 def parse_salary(salary_str: str) -> float:
     s = re.sub(r'[^0-9,.]', '', str(salary_str))
@@ -466,8 +489,7 @@ def preload_images(d: dict) -> dict:
     if bg_url:
         images['background'] = fetch_image_b64(bg_url)
     if not images.get('background'):
-        fallback = f"https://source.unsplash.com/1280x720/?{location},city,panorama"
-        images['background'] = fetch_image_b64(fallback)
+        print(f"    WARNUNG: Kein Hintergrundbild (background_image_url) verfuegbar oder laden fehlgeschlagen. Folie 1 wird ohne Stadtbild generiert.")
 
     for i, comp in enumerate(d.get('competitors', [])[:3]):
         build_url = comp.get('building_image_url', '')

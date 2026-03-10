@@ -165,15 +165,41 @@ Wenn du **im Projektordner** arbeitest: `--project-dir .` verwenden. Das Skript 
 
 ---
 
-### Schritt 3 - Folien in Manus Slides laden
+### Schritt 3 - ALLE 7 Folien in Manus Slides laden (KEINE ueberspringen!)
 
-`slide_initialize` -> 7 Folien, 1280x720. Dann fuer jede Folie 1-7 den `<body>`-Inhalt aus `/home/ubuntu/slides/slide_01.html` ... `slide_07.html` per `slide_edit` setzen.
+`slide_initialize` -> 7 Folien, 1280x720
+
+Dann JEDE Folie einzeln laden - ALLE 7 sind PFLICHT:
+1. `/home/ubuntu/slides/slide_01.html` lesen -> `slide_edit` Folie 1 setzen
+2. `/home/ubuntu/slides/slide_02.html` lesen -> `slide_edit` Folie 2 setzen
+3. `/home/ubuntu/slides/slide_03.html` lesen -> `slide_edit` Folie 3 setzen
+4. `/home/ubuntu/slides/slide_04.html` lesen -> `slide_edit` Folie 4 setzen
+5. `/home/ubuntu/slides/slide_05.html` lesen -> `slide_edit` Folie 5 setzen
+6. `/home/ubuntu/slides/slide_06.html` lesen -> `slide_edit` Folie 6 setzen
+7. `/home/ubuntu/slides/slide_07.html` lesen -> `slide_edit` Folie 7 setzen
+
+**STOPP-REGEL:** Exportiere NIEMALS bevor alle 7 Folien per `slide_edit` geladen sind.
+Wenn nach Folie 4 oder 5 der Impuls kommt aufzuhoeren: WEITERMACHEN bis Folie 7.
 
 ---
 
-### Schritt 4 - Visueller Abgleich & Nachkorrektur mit `slide_edit`
+### Schritt 4 - Feinkorrektur mit `slide_edit` (NUR Kleinigkeiten!)
 
-Mit der Referenz-PDF (Talent-Report-Layout) abgleichen, Fehlendes ergaenzen, Footer-Ueberlappung vermeiden (untere 44px reserviert).
+**ERLAUBT per `slide_edit`:**
+- Textueberlauf fixen (Schrift verkleinern oder Text kuerzen)
+- Abstaende/Padding nachjustieren
+- Fehlenden Footer ergaenzen
+- Positionen leicht verschieben
+
+**VERBOTEN per `slide_edit` (kommt bereits korrekt aus dem Skript!):**
+- Radar-SVG auf Folie 3 NICHT veraendern oder ersetzen
+  (Entfernungsradar = 3 konzentrische Kreise 40km/20km/Mitte, KEIN Dimensionsradar, KEIN Spinnendiagramm, KEINE Achsen)
+- Balkendiagramm auf Folie 4 NICHT umbauen
+- SWOT-Kacheln auf Folie 5 NICHT umstrukturieren
+- Kartenstruktur auf Folie 2, 6, 7 NICHT neu bauen
+- Hintergrundfarben und Farbschema NICHT aendern
+- SVGs NICHT komplett neu schreiben
+- Den gesamten `<body>`-Inhalt einer Folie NICHT komplett ersetzen
 
 ---
 

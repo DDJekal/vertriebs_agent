@@ -6,7 +6,7 @@ Wettbewerbsanalyse Präsentations-Generator v2.5
 Liest research_data.json → erzeugt 7 HTML-Folien → exportiert direkt als PDF.
 
 NEU in v2.5:
-- Folie 1: Stadtbild/Standortbild (background_image_url), Fallback via Unsplash
+- Folie 1: Stadtbild/Standortbild (background_image_url), kein Unsplash-Fallback
 - Folie 2: Pro Wettbewerber Unternehmensgebäude (building_image_url) bevorzugt, Fallback Logo (logo_url/Clearbit)
 - Chancen-Folie auf HiOffice-Dienstleistungen ausgerichtet (branchenspezifisch)
 - Konsistenz-Regeln für Datenformate (Gehalt, Mitarbeiter, Entfernung)
@@ -32,26 +32,40 @@ try:
     with open(LOGO_SVG_PATH, "r", encoding="utf-8") as _f:
         _logo_raw = _f.read()
     LOGO_B64 = "data:image/svg+xml;base64," + base64.b64encode(_logo_raw.encode()).decode()
+    print(f"  Logo geladen: {LOGO_SVG_PATH}")
 except Exception:
     LOGO_B64 = ""
+    print(f"  WARNUNG: HiOffice-Logo nicht gefunden: {LOGO_SVG_PATH}")
 
 # ── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
-def fetch_image_b64(url: str) -> str:
-    """Lädt ein Bild von URL und gibt einen base64 data-URI zurück.
-    Bei Fehler wird ein leerer String zurückgegeben."""
+def fetch_image_b64(url: str, retries: int = 2) -> str:
+    """Laedt ein Bild von URL und gibt einen base64 data-URI zurueck.
+    Versucht bis zu 2x mit 2s Pause. Validiert Content-Type und erkennt SVGs."""
     if not url:
         return ""
-    try:
-        import urllib.request
-        import urllib.error
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = resp.read()
-            ct = resp.headers.get_content_type() or "image/jpeg"
-            return f"data:{ct};base64," + base64.b64encode(data).decode()
-    except Exception:
-        return ""
+    import urllib.request
+    import urllib.error
+    import time
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                ct = resp.headers.get_content_type() or "image/jpeg"
+                if not ct.startswith("image/"):
+                    print(f"    WARNUNG: URL liefert '{ct}' statt Bild (Fehlerseite?): {url[:80]}")
+                    return ""
+                data = resp.read()
+                if data[:4] == b"<svg" or data[:5] == b"<?xml":
+                    ct = "image/svg+xml"
+                return f"data:{ct};base64," + base64.b64encode(data).decode()
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"    Bild-Download fehlgeschlagen (Versuch {attempt+1}/{retries}): {e}")
+                time.sleep(2)
+            else:
+                print(f"    WARNUNG: Bild konnte nicht geladen werden: {url[:80]} ({e})")
+    return ""
 
 def parse_salary(salary_str: str) -> float:
     s = re.sub(r'[^0-9,.]', '', str(salary_str))
@@ -463,9 +477,7 @@ def preload_images(d: dict) -> dict:
         images['background'] = fetch_image_b64(bg_url)
 
     if not images.get('background'):
-        fallback = f"https://source.unsplash.com/1280x720/?{location},city,panorama"
-        print(f"    Hintergrund Fallback (Stadtbild {location}): {fallback[:60]}...")
-        images['background'] = fetch_image_b64(fallback)
+        print(f"    WARNUNG: Kein Hintergrundbild (background_image_url) verfuegbar oder laden fehlgeschlagen. Folie 1 wird ohne Stadtbild generiert.")
 
     # Folie 2: Pro Wettbewerber Gebäudebild, Fallback Logo
     for i, comp in enumerate(d.get('competitors', [])[:3]):
