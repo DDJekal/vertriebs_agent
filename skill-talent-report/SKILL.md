@@ -154,25 +154,9 @@ Format: `"Keyword - Erklaerung (max. 65 Zeichen)"`
 
 ### Schritt 2 - HTML-Folien generieren (PFLICHT)
 
-Das Skript befindet sich im selben Ordner wie diese SKILL.md unter `scripts/generate_presentation.py`.
-**Schritt 2a:** Pfad zum Skript ermitteln:
-
-```bash
-SKILL_DIR=$(find /home/ubuntu -name "generate_presentation.py" 2>/dev/null | grep "wettbewerbsanalyse-talent-report" | head -1 | xargs dirname | xargs dirname)
-echo "Skill-Verzeichnis: $SKILL_DIR"
-```
-
-Falls das Skript nicht gefunden wird, suche nach der SKILL.md:
-```bash
-SKILL_DIR=$(find /home/ubuntu -name "SKILL.md" 2>/dev/null | xargs grep -l "Talent Report" 2>/dev/null | head -1 | xargs dirname)
-echo "Skill-Verzeichnis: $SKILL_DIR"
-```
-
-**Schritt 2b:** Skript ausfuehren:
-
 ```bash
 mkdir -p /home/ubuntu/slides/
-python3 "$SKILL_DIR/scripts/generate_presentation.py" \
+python3 /home/ubuntu/skills/wettbewerbsanalyse-talent-report/scripts/generate_presentation.py \
   /home/ubuntu/research_data.json \
   --html-dir /home/ubuntu/slides/ \
   --project-dir .

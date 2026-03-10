@@ -23,13 +23,11 @@ Der gesamte Prozess folgt dem Skill "wettbewerbsanalyse-generator-v2" (Stand v2.
 1. SKILL.md des Skills lesen und Workflow verstehen
 2. Recherche durchfuehren (eigene Web-Recherche - **nicht** aus Referenz-PDFs uebernehmen)
 3. JSON erstellen (`research_data.json`) gemaess Schema in SKILL.md
-4. Python-Skript des Skills ausfuehren. Das Skript liegt im selben Verzeichnis wie die SKILL.md unter `scripts/generate_presentation.py`. Pfad zur Laufzeit ermitteln:
+4. Python-Skript des Skills ausfuehren:
    ```bash
-   SKILL_DIR=$(find /home/ubuntu -name "generate_presentation.py" 2>/dev/null | grep "wettbewerbsanalyse-generator-v2" | head -1 | xargs dirname | xargs dirname)
-   # Falls nicht gefunden, nach SKILL.md suchen:
-   [ -z "$SKILL_DIR" ] && SKILL_DIR=$(find /home/ubuntu -name "SKILL.md" 2>/dev/null | xargs grep -l "wettbewerbsanalyse-generator-v2" 2>/dev/null | head -1 | xargs dirname)
    mkdir -p /home/ubuntu/slides/
-   python3 "$SKILL_DIR/scripts/generate_presentation.py" /home/ubuntu/research_data.json --html-dir /home/ubuntu/slides/
+   python3 /home/ubuntu/skills/wettbewerbsanalyse-generator-v2/scripts/generate_presentation.py \
+     /home/ubuntu/research_data.json --html-dir /home/ubuntu/slides/
    ```
 5. Folien in Manus Slides laden (`slide_initialize` -> 7 Folien, 1280x720)
 6. **ALLE 7 Folien** nacheinander laden - KEINE Folie ueberspringen:
