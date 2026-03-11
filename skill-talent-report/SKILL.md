@@ -18,7 +18,7 @@ Position:    [Berufsbezeichnung]
 ## Vorlage & Logo
 
 - **Python-Skript:** `/home/ubuntu/skills/wettbewerbsanalyse-talent-report/scripts/generate_presentation.py`
-- **Logo:** Das Skill enthaelt ein eingebautes Logo unter `templates/logo.png`. Optional: Eigene Datei **`logo.png`** oder **`logo.svg`** im **Projektordner** - wird dann statt des Skill-Logos verwendet. Aufruf mit `--project-dir .` wenn du im Projektroot arbeitest.
+- **Logo:** Footer ist dunkelgruen (#1a2e0d) – es wird ein **helles Logo** benoetigt. Das Skript sucht zuerst nach **`logo_white.png`** oder **`logo_white.svg`** (Projektordner, dann Skill `templates/`), danach Fallback auf `logo.png`/`logo.svg`. Im **Projektordner** (Manus Projektkontext) die helle Logo-Variante als `logo_white.png` ablegen; Aufruf mit `--project-dir .`.
 
 **CI-Vorgaben (exakt wie im Python-Skript - keine anderen Werte verwenden):**
 

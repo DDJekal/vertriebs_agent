@@ -44,24 +44,36 @@ def load_logo(path: Path, as_svg: bool) -> str:
         return ""
 
 def load_logo_from_project(project_dir: str) -> str:
+    """Laedt Logo aus Projektordner. Bevorzugt helles Logo (logo_white) fuer dunklen Footer."""
     if not project_dir:
         return ""
-    for name, svg in [("logo.png", False), ("logo.svg", True)]:
-        out = load_logo(Path(project_dir) / name, svg)
+    base = Path(project_dir)
+    # Zuerst helles Logo fuer Footer (dunkelgruener Hintergrund)
+    for name, svg in [("logo_white.png", False), ("logo_white.svg", True)]:
+        out = load_logo(base / name, svg)
         if out:
-            print(f"  Logo aus Projektordner geladen: {Path(project_dir) / name}")
+            print(f"  Logo (hell) aus Projektordner geladen: {base / name}")
             return out
-    print(f"  INFO: Kein logo.png/logo.svg im Projektordner gefunden: {project_dir}")
+    # Fallback: Standard-Logo
+    for name, svg in [("logo.png", False), ("logo.svg", True)]:
+        out = load_logo(base / name, svg)
+        if out:
+            print(f"  Logo aus Projektordner geladen: {base / name}")
+            return out
+    print(f"  INFO: Kein logo_white.*/logo.* im Projektordner gefunden: {project_dir}")
     return ""
 
 def load_logo_from_skill() -> str:
-    path = Path(__file__).resolve().parent.parent / "templates" / "logo.png"
-    result = load_logo(path, False)
-    if result:
-        print(f"  Logo aus Skill-Templates geladen: {path}")
-    else:
-        print(f"  WARNUNG: Skill-Logo nicht gefunden: {path}")
-    return result
+    """Laedt Logo aus Skill-Templates. Bevorzugt helles Logo (logo_white.png) fuer dunklen Footer."""
+    templates = Path(__file__).resolve().parent.parent / "templates"
+    for name in ("logo_white.png", "logo.png"):
+        path = templates / name
+        result = load_logo(path, False)
+        if result:
+            print(f"  Logo aus Skill-Templates geladen: {path}")
+            return result
+    print(f"  WARNUNG: Skill-Logo nicht gefunden (logo_white.png / logo.png): {templates}")
+    return ""
 
 def fetch_image_b64(url: str, retries: int = 2) -> str:
     """Laedt ein Bild von URL und gibt einen base64 data-URI zurueck.
@@ -487,6 +499,7 @@ def preload_images(d: dict) -> dict:
     location = d.get('location', 'city')
     bg_url = (d.get('background_image_url') or '').strip()
     if bg_url:
+        print(f"    Hintergrund/Stadtbild: {bg_url[:60]}...")
         images['background'] = fetch_image_b64(bg_url)
     if not images.get('background'):
         print(f"    WARNUNG: Kein Hintergrundbild (background_image_url) verfuegbar oder laden fehlgeschlagen. Folie 1 wird ohne Stadtbild generiert.")
@@ -494,6 +507,7 @@ def preload_images(d: dict) -> dict:
     for i, comp in enumerate(d.get('competitors', [])[:3]):
         build_url = comp.get('building_image_url', '')
         if build_url:
+            print(f"    Wettbewerber {i+1} Gebaeude: {build_url[:50]}...")
             images[f'competitor_building_{i}'] = fetch_image_b64(build_url)
 
         url = comp.get('logo_url', '') or comp.get('image_url', '')
@@ -503,6 +517,8 @@ def preload_images(d: dict) -> dict:
             domain = comp.get('domain', '')
             if domain:
                 images[f'competitor_{i}'] = fetch_image_b64(f"https://logo.clearbit.com/{domain}")
+        if not images.get(f'competitor_building_{i}') and not images.get(f'competitor_{i}'):
+            print(f"    WARNUNG: Wettbewerber {i+1} ({comp.get('name', '')[:30]}): weder Gebaeude noch Logo geladen.")
 
     return images
 
@@ -535,10 +551,8 @@ def main():
     LOGO_B64 = load_logo_from_project(project_dir) if project_dir else ""
     if not LOGO_B64:
         LOGO_B64 = load_logo_from_skill()
-        if LOGO_B64:
-            print("  Logo aus Skill templates/logo.png geladen.")
-    elif LOGO_B64:
-        print("  Logo aus Projektordner geladen (logo.png/logo.svg).")
+    if not LOGO_B64:
+        print("  WARNUNG: Kein Logo geladen. Footer wird ohne Logo angezeigt.")
 
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
